@@ -122,7 +122,7 @@ if should_join:
 
 
 # ========== Version & Auto-Update ==========
-VERSION = "BETA 1.1"
+VERSION = "BETA 1.1.1"
 VERSION_URL = "https://raw.githubusercontent.com/devcurly/DeepChecker/main/version.txt"
 PY_URL = "https://raw.githubusercontent.com/devcurly/DeepChecker/main/deepchecker.py"
 
