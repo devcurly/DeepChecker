@@ -2,7 +2,7 @@ import os
 import json
 import threading
 import tkinter as tk
-from tkinter import ttk, messagebox
+from tkinter import ttk, messagebox, Tk
 from collections import defaultdict
 import winreg
 import requests
@@ -180,124 +180,225 @@ def download_and_replace():
 
 check_for_update()
 
+# ========== Ultra-Modern Nighttime GUI Setup ==========
+import tkinter as tk
+from tkinter import ttk
 
-# ========== Stunning GUI Setup ==========
 app = tk.Tk()
 app.title(f"Curly's DeepChecker {get_remote_version()}")
-app.geometry("900x650")
+app.geometry("920x680")
 
-# Premium color palette
-ELECTRIC_BLUE = "#007BFF"
-PLASMA_PURPLE = "#6F42C1"
-NEON_CYAN = "#17A2B8"
-LASER_GREEN = "#28A745"
-SOLAR_ORANGE = "#FD7E14"
-CRIMSON_RED = "#DC3545"
-PLATINUM = "#F8F9FA"
-CARBON = "#212529"
-STEEL = "#343A40"
-OBSIDIAN = "#1A1D23"
+# 🌙 Modern Nighttime Color Palette
+VOID_BLACK = "#0A0A0F"  # Deep space background
+MIDNIGHT_BLUE = "#0F1419"  # Primary dark surface
+COSMIC_NAVY = "#1A1F2E"  # Secondary surface
+STELLAR_GRAY = "#2A2D3A"  # Card backgrounds
+NEBULA_PURPLE = "#6366F1"  # Primary accent (indigo)
+AURORA_CYAN = "#06B6D4"  # Secondary accent (cyan)
+PLASMA_PINK = "#EC4899"  # Highlight accent (pink)
+COSMIC_GREEN = "#10B981"  # Success/terminal green
+SOLAR_AMBER = "#F59E0B"  # Warning/attention
+LUNAR_WHITE = "#F8FAFC"  # Pure text
+STARDUST_GRAY = "#94A3B8"  # Muted text
+METEOR_RED = "#EF4444"  # Error/danger
 
-app.configure(bg=OBSIDIAN)
+# Enhanced background with subtle gradient effect
+app.configure(bg=VOID_BLACK)
 
+# Modern styling system
 style = ttk.Style(app)
 style.theme_use("clam")
 
-style.configure("Plasma.TButton",
-                font=("Segoe UI", 14, "bold"),
-                background=STEEL,
-                foreground=ELECTRIC_BLUE,
+# 🎨 Ultra-Modern Button Style
+style.configure("Quantum.TButton",
+                font=("Inter", 13, "bold"),
+                background=STELLAR_GRAY,
+                foreground=LUNAR_WHITE,
                 borderwidth=0,
                 focuscolor="none",
-                padding=(20, 12))
+                padding=(24, 14),
+                relief="flat")
 
-style.map("Plasma.TButton",
-          background=[('active', ELECTRIC_BLUE), ('pressed', PLASMA_PURPLE)],
-          foreground=[('active', PLATINUM), ('pressed', PLATINUM)])
+style.map("Quantum.TButton",
+          background=[('active', NEBULA_PURPLE),
+                      ('pressed', PLASMA_PINK),
+                      ('disabled', COSMIC_NAVY)],
+          foreground=[('active', LUNAR_WHITE),
+                      ('pressed', LUNAR_WHITE),
+                      ('disabled', STARDUST_GRAY)])
 
-style.configure("Electric.TLabel",
-                font=("Segoe UI", 12),
-                background=OBSIDIAN,
-                foreground=NEON_CYAN)
+# 🌟 Elegant Label Styles
+style.configure("Cosmic.TLabel",
+                font=("Inter", 12, "normal"),
+                background=VOID_BLACK,
+                foreground=AURORA_CYAN)
 
-style.configure("Mega.TLabel",
-                font=("Segoe UI", 24, "bold"),
-                background=OBSIDIAN,
-                foreground=ELECTRIC_BLUE)
+style.configure("Stellar.TLabel",
+                font=("Inter", 11, "medium"),
+                background=STELLAR_GRAY,
+                foreground=STARDUST_GRAY)
 
-style.configure("Cyber.TEntry",
-                font=("Segoe UI", 12),
-                fieldbackground=STEEL,
-                foreground=PLATINUM,
-                borderwidth=0,
-                insertcolor=ELECTRIC_BLUE,
-                selectbackground=PLASMA_PURPLE,
-                padding=10)
+style.configure("Nebula.TLabel",
+                font=("Inter", 26, "bold"),
+                background=MIDNIGHT_BLUE,
+                foreground=LUNAR_WHITE)
 
+# 🚀 Premium Entry Field
+style.configure("Void.TEntry",
+                font=("SF Mono", 12),
+                fieldbackground=COSMIC_NAVY,
+                foreground=LUNAR_WHITE,
+                borderwidth=1,
+                insertcolor=AURORA_CYAN,
+                selectbackground=NEBULA_PURPLE,
+                selectforeground=LUNAR_WHITE,
+                padding=(16, 12),
+                relief="flat")
 
+style.map("Void.TEntry",
+          fieldbackground=[('focus', STELLAR_GRAY)],
+          bordercolor=[('focus', NEBULA_PURPLE)])
 
-# Outer glow container
-glow_container = tk.Frame(app, bg=ELECTRIC_BLUE)
-glow_container.pack(fill=tk.BOTH, expand=True, padx=8, pady=8)
+# ✨ Main Container with Modern Layout
+main_wrapper = tk.Frame(app, bg=VOID_BLACK)
+main_wrapper.pack(fill=tk.BOTH, expand=True, padx=12, pady=12)
 
-main_container = tk.Frame(glow_container, bg=OBSIDIAN)
-main_container.pack(fill=tk.BOTH, expand=True, padx=4, pady=4)
+# Sophisticated gradient-like border effect
+border_frame = tk.Frame(main_wrapper, bg=NEBULA_PURPLE, bd=0)
+border_frame.pack(fill=tk.BOTH, expand=True)
 
-header_panel = tk.Frame(main_container, bg=CARBON, relief="flat", bd=0)
-header_panel.pack(fill=tk.X, padx=20, pady=20)
+main_container = tk.Frame(border_frame, bg=MIDNIGHT_BLUE, bd=0)
+main_container.pack(fill=tk.BOTH, expand=True, padx=2, pady=2)
 
-title_frame = tk.Frame(header_panel, bg=CARBON)
-title_frame.pack(pady=20)
+# 🎯 Modern Header Section
+header_section = tk.Frame(main_container, bg=MIDNIGHT_BLUE, bd=0)
+header_section.pack(fill=tk.X, padx=24, pady=24)
 
-header = ttk.Label(title_frame, text="\u2728 Curly's DeepChecker \u2728", style="Mega.TLabel")
-header.pack()
+# Sleek title area with backdrop
+title_backdrop = tk.Frame(header_section, bg=COSMIC_NAVY, bd=0, relief="flat")
+title_backdrop.pack(fill=tk.X, pady=16)
 
-divider = tk.Frame(main_container, height=2, bg=ELECTRIC_BLUE)
-divider.pack(fill=tk.X, padx=40, pady=10)
+title_container = tk.Frame(title_backdrop, bg=COSMIC_NAVY)
+title_container.pack(pady=20)
 
-input_card = tk.Frame(main_container, bg=STEEL, relief="flat", bd=0)
-input_card.pack(fill=tk.X, padx=20, pady=15)
+# Modern header with refined typography
+header_label = ttk.Label(title_container,
+                         text="✦ Curly's DeepChecker ✦",
+                         style="Nebula.TLabel")
+header_label.pack()
 
-input_content = tk.Frame(input_card, bg=STEEL)
-input_content.pack(pady=25, padx=30)
+# Elegant accent line
+accent_line = tk.Frame(main_container, height=1, bg=AURORA_CYAN, bd=0)
+accent_line.pack(fill=tk.X, padx=48, pady=16)
 
-label_frame = tk.Frame(input_content, bg=STEEL)
-label_frame.pack(anchor="w", pady=(0, 10))
+# 🎮 Modern Input Card
+input_section = tk.Frame(main_container, bg=STELLAR_GRAY, bd=0, relief="flat")
+input_section.pack(fill=tk.X, padx=24, pady=16)
 
-ttk.Label(label_frame, text="Your Discord ID:", style="Electric.TLabel").pack(anchor="w")
+input_inner = tk.Frame(input_section, bg=STELLAR_GRAY)
+input_inner.pack(pady=28, padx=32)
 
-discord_id_entry = ttk.Entry(input_content, width=35, style="Cyber.TEntry")
-discord_id_entry.pack(fill=tk.X, pady=(0, 10))
+# Refined label styling
+label_container = tk.Frame(input_inner, bg=STELLAR_GRAY)
+label_container.pack(anchor="w", pady=(0, 12))
 
-button_zone = tk.Frame(main_container, bg=OBSIDIAN)
-button_zone.pack(pady=25)
+input_label = ttk.Label(label_container,
+                        text="Discord ID",
+                        style="Stellar.TLabel")
+input_label.pack(anchor="w")
 
-start_button = ttk.Button(button_zone, text="\ud83d\udd0e Start Scan", command=run_scan, style="Plasma.TButton")
+# Premium input field
+discord_id_entry = ttk.Entry(input_inner, width=40, style="Void.TEntry")
+discord_id_entry.pack(fill=tk.X, pady=(0, 8))
+
+# 🎪 Action Button Zone
+action_zone = tk.Frame(main_container, bg=MIDNIGHT_BLUE)
+action_zone.pack(pady=28)
+
+start_button = ttk.Button(action_zone,
+                          text="🔍 Initialize Scan",
+                          command=run_scan,
+                          style="Quantum.TButton")
 start_button.pack()
 
-terminal_frame = tk.Frame(main_container, bg=CARBON, relief="flat", bd=0)
-terminal_frame.pack(fill=tk.BOTH, expand=True, padx=20, pady=(10, 20))
+# 💻 Ultra-Modern Terminal
+terminal_section = tk.Frame(main_container, bg=COSMIC_NAVY, bd=0, relief="flat")
+terminal_section.pack(fill=tk.BOTH, expand=True, padx=24, pady=(12, 24))
 
-terminal_header = tk.Frame(terminal_frame, bg=STEEL, height=30)
-terminal_header.pack(fill=tk.X)
-terminal_header.pack_propagate(False)
+# Sleek terminal header
+terminal_top = tk.Frame(terminal_section, bg=STELLAR_GRAY, height=36, bd=0)
+terminal_top.pack(fill=tk.X)
+terminal_top.pack_propagate(False)
 
-tk.Label(terminal_header, text="● ● ●", bg=STEEL, fg=SOLAR_ORANGE, font=("Segoe UI", 10)).pack(side=tk.LEFT, padx=10, pady=6)
-tk.Label(terminal_header, text="OUTPUT CONSOLE", bg=STEEL, fg=PLATINUM, font=("Segoe UI", 9, "bold")).pack(pady=6)
+# Modern terminal controls
+controls_frame = tk.Frame(terminal_top, bg=STELLAR_GRAY)
+controls_frame.pack(side=tk.LEFT, padx=16, pady=8)
 
-result_text = tk.Text(terminal_frame,
-                     wrap=tk.WORD,
-                     font=("Cascadia Code", 11),
-                     bg=CARBON,
-                     fg=LASER_GREEN,
-                     insertbackground=ELECTRIC_BLUE,
-                     selectbackground=PLASMA_PURPLE,
-                     selectforeground=PLATINUM,
-                     borderwidth=0,
-                     relief="flat",
-                     highlightthickness=0,
-                     padx=15,
-                     pady=15)
-result_text.pack(fill=tk.BOTH, expand=True, padx=8, pady=8)
+# Refined traffic light buttons
+tk.Label(controls_frame, text="●", bg=STELLAR_GRAY, fg=METEOR_RED,
+         font=("SF Pro Display", 12)).pack(side=tk.LEFT, padx=2)
+tk.Label(controls_frame, text="●", bg=STELLAR_GRAY, fg=SOLAR_AMBER,
+         font=("SF Pro Display", 12)).pack(side=tk.LEFT, padx=2)
+tk.Label(controls_frame, text="●", bg=STELLAR_GRAY, fg=COSMIC_GREEN,
+         font=("SF Pro Display", 12)).pack(side=tk.LEFT, padx=2)
+
+# Terminal title
+title_label = tk.Label(terminal_top, text="SYSTEM CONSOLE",
+                       bg=STELLAR_GRAY, fg=STARDUST_GRAY,
+                       font=("SF Mono", 9, "bold"))
+title_label.pack(pady=8)
+
+# 🖥️ Premium Terminal Display
+result_text = tk.Text(terminal_section,
+                      wrap=tk.WORD,
+                      font=("JetBrains Mono", 11),
+                      bg=COSMIC_NAVY,
+                      fg=COSMIC_GREEN,
+                      insertbackground=AURORA_CYAN,
+                      selectbackground=NEBULA_PURPLE,
+                      selectforeground=LUNAR_WHITE,
+                      borderwidth=0,
+                      relief="flat",
+                      highlightthickness=0,
+                      padx=20,
+                      pady=18)
+result_text.pack(fill=tk.BOTH, expand=True, padx=1, pady=1)
+
+
+# 🎨 Advanced Visual Enhancements
+def add_hover_effects():
+    """Add sophisticated hover animations"""
+
+    def on_enter(event):
+        event.widget.configure(cursor="hand2")
+
+    def on_leave(event):
+        event.widget.configure(cursor="")
+
+    start_button.bind("<Enter>", on_enter)
+    start_button.bind("<Leave>", on_leave)
+
+
+add_hover_effects()
+
+
+# 🌟 Optional: Add subtle pulsing effect to accent elements
+def create_pulse_effect():
+    """Creates a subtle pulsing glow effect"""
+    colors = [AURORA_CYAN, NEBULA_PURPLE, PLASMA_PINK]
+    current_color = [0]
+
+    def pulse():
+        accent_line.configure(bg=colors[current_color[0]])
+        current_color[0] = (current_color[0] + 1) % len(colors)
+        app.after(3000, pulse)  # Change every 3 seconds
+
+    # Uncomment to enable pulsing effect
+    # pulse()
+
+
+# 🎯 Modern Focus Management
+def setup_focus_system():
+    pass
 
 app.mainloop()
