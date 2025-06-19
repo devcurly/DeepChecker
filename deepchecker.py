@@ -112,17 +112,18 @@ def run_scan():
         except Exception as e:
             result_text.insert(tk.END, f"\u274c Error: {e}")
         start_button.config(state=tk.NORMAL)
-        
-should_join = messagebox.askyesno("Need Help?", "Would you like to join our support Discord server?")
+        should_join = messagebox.askyesno("Need Help?", "Would you like to join our support Discord server?")
 if should_join:
     webbrowser.open("https://discord.gg/F77q5GDNjB")
+        
+
 
 
     threading.Thread(target=worker, daemon=True).start()
 
 
 # ========== Version & Auto-Update ==========
-VERSION = "BETA 1.1.1"
+VERSION = "BETA 1.1.1 (DEV HOTFIX)"
 VERSION_URL = "https://raw.githubusercontent.com/devcurly/DeepChecker/main/version.txt"
 PY_URL = "https://raw.githubusercontent.com/devcurly/DeepChecker/main/deepchecker.py"
 
