@@ -115,7 +115,7 @@ def run_scan():
 
 
 # ========== Version & Auto-Update ==========
-VERSION = "BETA 1.0"
+VERSION = "BETA 1.1"
 VERSION_URL = "https://raw.githubusercontent.com/devcurly/DeepChecker/main/version.txt"
 PY_URL = "https://raw.githubusercontent.com/devcurly/DeepChecker/main/deepchecker.py"
 
