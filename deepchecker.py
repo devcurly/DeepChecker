@@ -441,31 +441,5 @@ def create_pulse_effect():
 # 🎯 Modern Focus Management
 def setup_focus_system():
     pass
-
-# Play intro video first
-def play_intro_video():
-    import cv2
-
-    cap = cv2.VideoCapture("intro.mov")
-    if not cap.isOpened():
-        print("❌ Failed to load intro.mov — skipping video.")
-        return
-
-    cv2.namedWindow("Launching DeepChecker...", cv2.WINDOW_NORMAL)
-    cv2.setWindowProperty("Launching DeepChecker...", cv2.WND_PROP_FULLSCREEN, cv2.WINDOW_FULLSCREEN)
-
-    while cap.isOpened():
-        ret, frame = cap.read()
-        if not ret:
-            break
-        cv2.imshow("Launching DeepChecker...", frame)
-        if cv2.waitKey(25) & 0xFF == ord('q'):
-            break
-
-    cap.release()
-    cv2.destroyAllWindows()
-
-# Run the intro and then launch GUI
-if __name__ == '__main__':
-    play_intro_video()
+    
     app.mainloop()
