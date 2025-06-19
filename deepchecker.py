@@ -6,6 +6,10 @@ from tkinter import ttk, messagebox
 from collections import defaultdict
 import winreg
 import requests
+import sys
+import time
+import subprocess
+import shutil
 
 # ========== Original DeepChecker Logic ==========
 CHECK_KEYWORDS = [
@@ -15,7 +19,7 @@ CHECK_KEYWORDS = [
     "HarmonyPatch", "MonkeyPatch", "Update", "PlayerDistance", "Hand", "ArmLength"
 ]
 
-WEBHOOK_URL = "https://discord.com/api/webhooks/1375269854105571359/wOZkHAUbnB7xgdLYkWBtJRhJcY1J2O3ri4iRRLxnvUdZlR-FHG5nQrMORg2aW5ZVZeNZ"
+
 
 def get_steamvr_settings_path():
     return os.path.expandvars(r"%LOCALAPPDATA%\\openvr\\steamvr.vrsettings")
@@ -73,26 +77,7 @@ def analyze_all_dlls(folder, auto_disable=False, safe_mode=True):
             })
     return results
 
-def send_results_to_webhook(discord_id, world_scale, results):
-    header = f"**DeepCheck Report**\nDiscord ID: `{discord_id}`\nWorld Scale: `{world_scale}`\n\n"
-    content = ""
-    for mod in sorted(results, key=lambda m: m["score"], reverse=True):
-        block = f"**{mod['filename']}** - Score: {mod['score']}\n"
-        for keyword, count in mod['matches'].items():
-            block += f"• {keyword} ({count})\n"
-        block += "\n"
-        if len(header + content + block) >= 1900:
-            try:
-                requests.post(WEBHOOK_URL, json={"content": header + content})
-            except Exception:
-                pass
-            content = ""
-        content += block
-    if content:
-        try:
-            requests.post(WEBHOOK_URL, json={"content": header + content})
-        except Exception:
-            pass
+
 
 # ========== GUI Logic ==========
 
@@ -122,16 +107,61 @@ def run_scan():
                         output += f"  • {keyword} ({count})\n"
                     output += "\n"
             result_text.insert(tk.END, output)
-            send_results_to_webhook(discord_id, world_scale, results)
         except Exception as e:
             result_text.insert(tk.END, f"\u274c Error: {e}")
         start_button.config(state=tk.NORMAL)
 
     threading.Thread(target=worker, daemon=True).start()
 
+
+# ========== Version & Auto-Update ==========
+VERSION = "BETA 1.0"
+VERSION_URL = "https://raw.githubusercontent.com/devcurly/DeepChecker/main/version.txt"
+PY_URL = "https://raw.githubusercontent.com/devcurly/DeepChecker/main/deepchecker.py"
+
+def check_for_update():
+    try:
+        response = requests.get(VERSION_URL, timeout=5)
+        latest_version = response.text.strip()
+        if latest_version != VERSION:
+            # temp root for messagebox
+            temp_root = tk.Tk()
+            temp_root.withdraw()
+            if messagebox.askyesno("Update Available", f"A new version ({latest_version}) is available. Update now?"):
+                download_and_replace()
+                temp_root.destroy()
+                sys.exit()
+            temp_root.destroy()
+    except Exception as e:
+        print("Update check failed:", e)
+
+def download_and_replace():
+    new_file = "deepchecker_new.py"
+    with requests.get(PY_URL, stream=True) as r:
+        with open(new_file, "wb") as f:
+            for chunk in r.iter_content(chunk_size=8192):
+                f.write(chunk)
+
+    bat_script = """@echo off
+    timeout /t 1 > nul
+    taskkill /f /im python.exe > nul 2>&1
+    del deepchecker.py
+    rename deepchecker_new.py deepchecker.py
+    start python deepchecker.py
+    exit
+    """
+
+    with open("update_replace.bat", "w") as f:
+        f.write(bat_script)
+
+    subprocess.Popen(["update_replace.bat"])
+
+check_for_update()
+
+
 # ========== Stunning GUI Setup ==========
 app = tk.Tk()
-app.title("\ud83d\ude80 DeepChecker Pro")
+app.title(f"Curly's DeepChecker {VERSION}")
 app.geometry("900x650")
 
 # Premium color palette
@@ -195,7 +225,7 @@ header_panel.pack(fill=tk.X, padx=20, pady=20)
 title_frame = tk.Frame(header_panel, bg=CARBON)
 title_frame.pack(pady=20)
 
-header = ttk.Label(title_frame, text="\u2728 Curly's DeepChecker GUI \u2728", style="Mega.TLabel")
+header = ttk.Label(title_frame, text="\u2728 Curly's DeepChecker \u2728", style="Mega.TLabel")
 header.pack()
 
 divider = tk.Frame(main_container, height=2, bg=ELECTRIC_BLUE)
