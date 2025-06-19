@@ -2,7 +2,7 @@ import os
 import json
 import threading
 import tkinter as tk
-from tkinter import ttk, messagebox, Tk
+from tkinter import ttk, messagebox
 from collections import defaultdict
 import winreg
 import requests
@@ -11,9 +11,19 @@ import time
 import subprocess
 import shutil
 import webbrowser
-from tkinter import messagebox
+from ttkbootstrap import Style
+from ttkbootstrap.constants import *
 
-# ========== Original DeepChecker Logic ==========
+# ====== CONFIG ======
+GITHUB_RAW_BASE = "https://raw.githubusercontent.com/devcurly/DeepChecker/main/"
+VERSION_FILE = "version.txt"
+LOCAL_VERSION = "BETA 0.d"
+DISCORD_SERVER_URL = "https://discord.gg/a4b2X8sg9r"
+ICON_PATH = "deepchecker.ico"
+SCRIPT_NAME = "deepchecker.py"
+SHORTCUT_NAME = "DeepChecker.lnk"
+
+# ====== SCANNER KEYWORDS ======
 CHECK_KEYWORDS = [
     "Fly", "Speed", "Platform", "LongArm", "TagAura", "Ghost", "WallClimb", "AutoTag",
     "PlayerMovement", "PlayerController", "OnUpdate", "FixedUpdate", "Teleport",
@@ -21,17 +31,13 @@ CHECK_KEYWORDS = [
     "HarmonyPatch", "MonkeyPatch", "Update", "PlayerDistance", "Hand", "ArmLength"
 ]
 
-
-
+# ====== UTILS ======
 def get_steamvr_settings_path():
     return os.path.expandvars(r"%LOCALAPPDATA%\\openvr\\steamvr.vrsettings")
 
 def read_world_scale():
-    path = get_steamvr_settings_path()
-    if not os.path.isfile(path):
-        return None
     try:
-        with open(path, "r") as f:
+        with open(get_steamvr_settings_path(), "r") as f:
             data = json.load(f)
         return data.get("steamvr", {}).get("worldScale", 1.0)
     except:
@@ -41,11 +47,10 @@ def find_gorilla_tag_path():
     try:
         with winreg.OpenKey(winreg.HKEY_LOCAL_MACHINE, r"SOFTWARE\\WOW6432Node\\Valve\\Steam") as key:
             steam_path, _ = winreg.QueryValueEx(key, "InstallPath")
-    except FileNotFoundError:
+    except:
         steam_path = os.path.expandvars(r"%PROGRAMFILES(X86)%\\Steam")
-
-    gtag_path = os.path.join(steam_path, "steamapps", "common", "Gorilla Tag", "BepInEx", "plugins")
-    return gtag_path if os.path.isdir(gtag_path) else None
+    path = os.path.join(steam_path, "steamapps", "common", "Gorilla Tag", "BepInEx", "plugins")
+    return path if os.path.isdir(path) else None
 
 def read_dll_text(path):
     try:
@@ -63,383 +68,128 @@ def scan_dll_for_keywords(dll_path):
             hits[keyword] = count
     return hits
 
-def analyze_all_dlls(folder, auto_disable=False, safe_mode=True):
+def analyze_all_dlls(folder):
     results = []
     for file in os.listdir(folder):
-        if not (file.endswith(".dll") or file.endswith(".dll.disabled")):
+        if not file.endswith(".dll"):
             continue
         path = os.path.join(folder, file)
         hits = scan_dll_for_keywords(path)
         score = sum(hits.values())
         if score > 0:
-            results.append({
-                "filename": file,
-                "score": score,
-                "matches": dict(hits)
-            })
+            results.append({"filename": file, "score": score, "matches": dict(hits)})
     return results
 
-
-
-# ========== GUI Logic ==========
-
-def run_scan():
-    discord_id = discord_id_entry.get().strip()
-    if not discord_id.isdigit():
-        messagebox.showerror("Invalid Input", "Please enter a valid numeric Discord ID.")
-        return
-
-    start_button.config(state=tk.DISABLED)
-    result_text.delete(1.0, tk.END)
-
-    def worker():
-        try:
-            folder = find_gorilla_tag_path()
-            if not folder:
-                raise Exception("Gorilla Tag plugin folder not found.")
-            world_scale = read_world_scale() or 1.0
-            results = analyze_all_dlls(folder)
-            if not results:
-                output = "\u2705 No suspicious DLLs found."
-            else:
-                output = f"\ud83d\udd0d Found {len(results)} suspicious DLL(s):\n\n"
-                for mod in results:
-                    output += f"{mod['filename']} - Suspicion Score: {mod['score']}\n"
-                    for keyword, count in mod['matches'].items():
-                        output += f"  • {keyword} ({count})\n"
-                    output += "\n"
-            result_text.insert(tk.END, output)
-        except Exception as e:
-            result_text.insert(tk.END, f"\u274c Error: {e}")
-        start_button.config(state=tk.NORMAL)
-        # Ask if they want to join support server
-        should_join = messagebox.askyesno("Need Help?", "Would you like to join our support Discord server?")
-        if should_join:
-            webbrowser.open("https://discord.gg/F77q5GDNjB")
-
-    threading.Thread(target=worker, daemon=True).start()
-
-
-# ========== Version & Auto-Update ==========
+# ====== AUTO-UPDATER ======
 def get_remote_version():
     try:
-        response = requests.get(VERSION_URL, timeout=5)
-        return response.text.strip()
+        resp = requests.get(GITHUB_RAW_BASE + VERSION_FILE)
+        return resp.text.strip()
     except:
-        return "Unknown"
+        return LOCAL_VERSION
 
-VERSION_URL = "https://raw.githubusercontent.com/devcurly/DeepChecker/main/version.txt"
-PY_URL = "https://raw.githubusercontent.com/devcurly/DeepChecker/main/deepchecker.py"
-
-def parse_version(v):
-    return [int(part) for part in v.strip().split(".")]
-
-def is_newer_version(local, remote):
+def update_script():
     try:
-        return parse_version(remote) > parse_version(local)
-    except:
-        return False
-
-def check_for_update():
-    try:
-        response = requests.get(VERSION_URL, timeout=5)
-        latest_version = response.text.strip()
-        print(f"Local version: {get_remote_version()} | Remote version: {latest_version}")
-        if is_newer_version(get_remote_version(), latest_version):
-            temp_root = tk.Tk()
-            temp_root.withdraw()
-            if messagebox.askyesno("Update Available", f"A new version ({latest_version}) is available. Update now?"):
-                download_and_replace()
-                temp_root.destroy()
-                sys.exit()
-            temp_root.destroy()
+        py_url = GITHUB_RAW_BASE + SCRIPT_NAME
+        new_code = requests.get(py_url).text
+        with open(SCRIPT_NAME, 'w', encoding='utf-8') as f:
+            f.write(new_code)
+        subprocess.Popen([sys.executable, SCRIPT_NAME])
+        sys.exit()
     except Exception as e:
-        print("Update check failed:", e)
+        messagebox.showerror("Update Failed", str(e))
 
-import sys
-import threading
-
-def run_uninstaller():
-    confirm = messagebox.askyesno("Uninstall", "Are you sure you want to uninstall DeepChecker?\nThis will close the app and remove all files.")
-    if not confirm:
-        return
-
-    bat = f"""
-    @echo off
-    timeout /t 1 > nul
-    taskkill /f /pid {os.getpid()} > nul 2>&1
-    del /f \"{os.path.basename(sys.argv[0])}\"
-    del /f version.txt
-    del /f deepchecker.ico
-    del /f update_replace.bat
-    set SHORTCUT=\"%USERPROFILE%\\Desktop\\DeepChecker.lnk\"
-    if exist %SHORTCUT% del /f %SHORTCUT%
-    exit
+# ====== UNINSTALLER ======
+def uninstall():
+    script = f"""@echo off
+    timeout /t 1 >nul
+    del "{SCRIPT_NAME}"
+    del "{VERSION_FILE}"
+    del "%USERPROFILE%\\Desktop\\{SHORTCUT_NAME}"
+    del %0
     """
-
     with open("uninstall.bat", "w") as f:
-        f.write(bat)
+        f.write(script)
+    os.startfile("uninstall.bat")
+    sys.exit()
 
-    threading.Thread(target=lambda: subprocess.Popen(["uninstall.bat"])).start()
-    app.destroy()
+# ====== GUI APP ======
+class DeepCheckerApp:
+    def __init__(self, root):
+        self.themes = ["darkly", "flatly", "cyborg", "superhero", "solar"]
+        self.theme_index = 0
+        self.style = Style(theme=self.themes[self.theme_index])
+        self.root = self.style.master
+        self.root.title(f"🧠 DeepChecker v{LOCAL_VERSION}")
+        self.root.geometry("650x480")
+        try:
+            self.root.iconbitmap(ICON_PATH)
+        except:
+            pass
 
+        self.discord_id = tk.StringVar()
 
+        frame = ttk.Frame(self.root, padding=15)
+        frame.pack(fill=BOTH, expand=True)
 
+        ttk.Label(frame, text="DeepChecker", font=("Segoe UI", 14, "bold")).pack(pady=(0, 10))
 
-def download_and_replace():
-    new_file = "deepchecker_new.py"
-    with requests.get(PY_URL, stream=True) as r:
-        with open(new_file, "wb") as f:
-            for chunk in r.iter_content(chunk_size=8192):
-                f.write(chunk)
+        ttk.Label(frame, text="Enter your Discord ID:").pack(anchor="w")
+        ttk.Entry(frame, textvariable=self.discord_id, width=40).pack(pady=5)
 
-    bat_script = """@echo off
-    timeout /t 1 > nul
-    taskkill /f /im python.exe > nul 2>&1
-    del deepchecker.py
-    rename deepchecker_new.py deepchecker.py
-    start python deepchecker.py
-    exit
-    """
+        btn_frame = ttk.Frame(frame)
+        btn_frame.pack(pady=10)
 
-    with open("update_replace.bat", "w") as f:
-        f.write(bat_script)
+        ttk.Button(btn_frame, text="🔍 Start Scan", command=self.start_scan, bootstyle="success").pack(side=LEFT, padx=5)
+        ttk.Button(btn_frame, text="🗑 Uninstall", command=uninstall, bootstyle="danger").pack(side=LEFT, padx=5)
+        ttk.Button(btn_frame, text="💬 Support Server", command=lambda: webbrowser.open(DISCORD_SERVER_URL), bootstyle="info").pack(side=LEFT, padx=5)
 
-    subprocess.Popen(["update_replace.bat"])
+        self.theme_button = ttk.Button(btn_frame, text=f"🎨 Theme: {self.themes[self.theme_index]}", command=self.toggle_theme, bootstyle="secondary")
+        self.theme_button.pack(side=LEFT, padx=5)
 
-check_for_update()
+        ttk.Label(frame, text="Scan Results:").pack(anchor="w", pady=(10, 0))
 
-# ========== Ultra-Modern Nighttime GUI Setup ==========
-import tkinter as tk
-from tkinter import ttk
+        text_frame = ttk.Frame(frame)
+        text_frame.pack(fill=BOTH, expand=True)
 
-app = tk.Tk()
-app.title(f"Curly's DeepChecker {get_remote_version()}")
-app.geometry("920x680")
+        self.output = tk.Text(text_frame, wrap="word", height=10, relief="sunken", borderwidth=2, bg=self.style.colors.bg, fg=self.style.colors.fg)
+        self.output.pack(side=LEFT, fill=BOTH, expand=True)
 
-# 🌙 Modern Nighttime Color Palette
-VOID_BLACK = "#0A0A0F"  # Deep space background
-MIDNIGHT_BLUE = "#0F1419"  # Primary dark surface
-COSMIC_NAVY = "#1A1F2E"  # Secondary surface
-STELLAR_GRAY = "#2A2D3A"  # Card backgrounds
-NEBULA_PURPLE = "#6366F1"  # Primary accent (indigo)
-AURORA_CYAN = "#06B6D4"  # Secondary accent (cyan)
-PLASMA_PINK = "#EC4899"  # Highlight accent (pink)
-COSMIC_GREEN = "#10B981"  # Success/terminal green
-SOLAR_AMBER = "#F59E0B"  # Warning/attention
-LUNAR_WHITE = "#F8FAFC"  # Pure text
-STARDUST_GRAY = "#94A3B8"  # Muted text
-METEOR_RED = "#EF4444"  # Error/danger
+        scrollbar = ttk.Scrollbar(text_frame, orient="vertical", command=self.output.yview)
+        scrollbar.pack(side=RIGHT, fill="y")
+        self.output.config(yscrollcommand=scrollbar.set)
 
-# Enhanced background with subtle gradient effect
-app.configure(bg=VOID_BLACK)
+        threading.Thread(target=self.check_for_updates, daemon=True).start()
 
-# Modern styling system
-style = ttk.Style(app)
-style.theme_use("clam")
+    def toggle_theme(self):
+        self.theme_index = (self.theme_index + 1) % len(self.themes)
+        new_theme = self.themes[self.theme_index]
+        self.style.theme_use(new_theme)
+        self.output.config(bg=self.style.colors.bg, fg=self.style.colors.fg)
+        self.theme_button.config(text=f"🎨 Theme: {new_theme}")
 
-# 🎨 Ultra-Modern Button Style
-style.configure("Quantum.TButton",
-                font=("Inter", 13, "bold"),
-                background=STELLAR_GRAY,
-                foreground=LUNAR_WHITE,
-                borderwidth=0,
-                focuscolor="none",
-                padding=(24, 14),
-                relief="flat")
+    def start_scan(self):
+        self.output.delete(1.0, tk.END)
+        gtag_path = find_gorilla_tag_path()
+        if not gtag_path:
+            self.output.insert(tk.END, "🚫 Gorilla Tag path not found.\n")
+            return
+        results = analyze_all_dlls(gtag_path)
+        if not results:
+            self.output.insert(tk.END, "✅ No suspicious DLLs found.\n")
+        for result in results:
+            self.output.insert(tk.END, f"🔍 {result['filename']} | Score: {result['score']}\n")
+            for k, v in result['matches'].items():
+                self.output.insert(tk.END, f"   - {k}: {v}\n")
 
-style.map("Quantum.TButton",
-          background=[('active', NEBULA_PURPLE),
-                      ('pressed', PLASMA_PINK),
-                      ('disabled', COSMIC_NAVY)],
-          foreground=[('active', LUNAR_WHITE),
-                      ('pressed', LUNAR_WHITE),
-                      ('disabled', STARDUST_GRAY)])
+    def check_for_updates(self):
+        remote = get_remote_version()
+        if remote != LOCAL_VERSION:
+            if messagebox.askyesno("Update Available", f"A new version ({remote}) is available.\nUpdate now?"):
+                update_script()
 
-# 🌟 Elegant Label Styles
-style.configure("Cosmic.TLabel",
-                font=("Inter", 12, "normal"),
-                background=VOID_BLACK,
-                foreground=AURORA_CYAN)
-
-style.configure("Stellar.TLabel",
-                font=("Inter", 11, "medium"),
-                background=STELLAR_GRAY,
-                foreground=STARDUST_GRAY)
-
-style.configure("Nebula.TLabel",
-                font=("Inter", 26, "bold"),
-                background=MIDNIGHT_BLUE,
-                foreground=LUNAR_WHITE)
-
-# 🚀 Premium Entry Field
-style.configure("Void.TEntry",
-                font=("SF Mono", 12),
-                fieldbackground=COSMIC_NAVY,
-                foreground=LUNAR_WHITE,
-                borderwidth=1,
-                insertcolor=AURORA_CYAN,
-                selectbackground=NEBULA_PURPLE,
-                selectforeground=LUNAR_WHITE,
-                padding=(16, 12),
-                relief="flat")
-
-style.map("Void.TEntry",
-          fieldbackground=[('focus', STELLAR_GRAY)],
-          bordercolor=[('focus', NEBULA_PURPLE)])
-
-# ✨ Main Container with Modern Layout
-main_wrapper = tk.Frame(app, bg=VOID_BLACK)
-main_wrapper.pack(fill=tk.BOTH, expand=True, padx=12, pady=12)
-
-# Sophisticated gradient-like border effect
-border_frame = tk.Frame(main_wrapper, bg=NEBULA_PURPLE, bd=0)
-border_frame.pack(fill=tk.BOTH, expand=True)
-
-main_container = tk.Frame(border_frame, bg=MIDNIGHT_BLUE, bd=0)
-main_container.pack(fill=tk.BOTH, expand=True, padx=2, pady=2)
-
-# 🎯 Modern Header Section
-header_section = tk.Frame(main_container, bg=MIDNIGHT_BLUE, bd=0)
-header_section.pack(fill=tk.X, padx=24, pady=24)
-
-# Sleek title area with backdrop
-title_backdrop = tk.Frame(header_section, bg=COSMIC_NAVY, bd=0, relief="flat")
-title_backdrop.pack(fill=tk.X, pady=16)
-
-title_container = tk.Frame(title_backdrop, bg=COSMIC_NAVY)
-title_container.pack(pady=20)
-
-# Modern header with refined typography
-header_label = ttk.Label(title_container,
-                         text="✦ Curly's DeepChecker ✦",
-                         style="Nebula.TLabel")
-header_label.pack()
-
-# Elegant accent line
-accent_line = tk.Frame(main_container, height=1, bg=AURORA_CYAN, bd=0)
-accent_line.pack(fill=tk.X, padx=48, pady=16)
-
-# 🎮 Modern Input Card
-input_section = tk.Frame(main_container, bg=STELLAR_GRAY, bd=0, relief="flat")
-input_section.pack(fill=tk.X, padx=24, pady=16)
-
-input_inner = tk.Frame(input_section, bg=STELLAR_GRAY)
-input_inner.pack(pady=28, padx=32)
-
-# Refined label styling
-label_container = tk.Frame(input_inner, bg=STELLAR_GRAY)
-label_container.pack(anchor="w", pady=(0, 12))
-
-input_label = ttk.Label(label_container,
-                        text="Discord ID",
-                        style="Stellar.TLabel")
-input_label.pack(anchor="w")
-
-instruction_label = ttk.Label(input_inner,
-                              text="🔹 Please enter your Discord ID before scanning.",
-                              style="Cosmic.TLabel")
-instruction_label.pack(anchor="w", pady=(0, 16))
-
-# Premium input field
-discord_id_entry = ttk.Entry(input_inner, width=40, style="Void.TEntry")
-discord_id_entry.pack(fill=tk.X, pady=(0, 8))
-
-# 🎪 Action Button Zone
-action_zone = tk.Frame(main_container, bg=MIDNIGHT_BLUE)
-action_zone.pack(pady=28)
-
-start_button = ttk.Button(action_zone,
-                          text="🔍 Initialize Scan",
-                          command=run_scan,
-                          style="Quantum.TButton")
-start_button.pack()
-
-uninstall_button = ttk.Button(action_zone,
-                              text="🗑 Uninstall DeepChecker",
-                              command=run_uninstaller,
-                              style="Quantum.TButton")
-uninstall_button.pack(pady=(12, 0))
-
-
-# 💻 Ultra-Modern Terminal
-terminal_section = tk.Frame(main_container, bg=COSMIC_NAVY, bd=0, relief="flat")
-terminal_section.pack(fill=tk.BOTH, expand=True, padx=24, pady=(12, 24))
-
-# Sleek terminal header
-terminal_top = tk.Frame(terminal_section, bg=STELLAR_GRAY, height=36, bd=0)
-terminal_top.pack(fill=tk.X)
-terminal_top.pack_propagate(False)
-
-# Modern terminal controls
-controls_frame = tk.Frame(terminal_top, bg=STELLAR_GRAY)
-controls_frame.pack(side=tk.LEFT, padx=16, pady=8)
-
-# Refined traffic light buttons
-tk.Label(controls_frame, text="●", bg=STELLAR_GRAY, fg=METEOR_RED,
-         font=("SF Pro Display", 12)).pack(side=tk.LEFT, padx=2)
-tk.Label(controls_frame, text="●", bg=STELLAR_GRAY, fg=SOLAR_AMBER,
-         font=("SF Pro Display", 12)).pack(side=tk.LEFT, padx=2)
-tk.Label(controls_frame, text="●", bg=STELLAR_GRAY, fg=COSMIC_GREEN,
-         font=("SF Pro Display", 12)).pack(side=tk.LEFT, padx=2)
-
-# Terminal title
-title_label = tk.Label(terminal_top, text="SYSTEM CONSOLE",
-                       bg=STELLAR_GRAY, fg=STARDUST_GRAY,
-                       font=("SF Mono", 9, "bold"))
-title_label.pack(pady=8)
-
-# 🖥️ Premium Terminal Display
-result_text = tk.Text(terminal_section,
-                      wrap=tk.WORD,
-                      font=("JetBrains Mono", 11),
-                      bg=COSMIC_NAVY,
-                      fg=COSMIC_GREEN,
-                      insertbackground=AURORA_CYAN,
-                      selectbackground=NEBULA_PURPLE,
-                      selectforeground=LUNAR_WHITE,
-                      borderwidth=0,
-                      relief="flat",
-                      highlightthickness=0,
-                      padx=20,
-                      pady=18)
-result_text.pack(fill=tk.BOTH, expand=True, padx=1, pady=1)
-
-
-# 🎨 Advanced Visual Enhancements
-def add_hover_effects():
-    """Add sophisticated hover animations"""
-
-    def on_enter(event):
-        event.widget.configure(cursor="hand2")
-
-    def on_leave(event):
-        event.widget.configure(cursor="")
-
-    start_button.bind("<Enter>", on_enter)
-    start_button.bind("<Leave>", on_leave)
-
-
-add_hover_effects()
-
-
-# 🌟 Optional: Add subtle pulsing effect to accent elements
-def create_pulse_effect():
-    """Creates a subtle pulsing glow effect"""
-    colors = [AURORA_CYAN, NEBULA_PURPLE, PLASMA_PINK]
-    current_color = [0]
-
-    def pulse():
-        accent_line.configure(bg=colors[current_color[0]])
-        current_color[0] = (current_color[0] + 1) % len(colors)
-        app.after(3000, pulse)  # Change every 3 seconds
-
-    # Uncomment to enable pulsing effect
-    # pulse()
-
-
-# 🎯 Modern Focus Management
-def setup_focus_system():
-    pass
-    
-    app.mainloop()
+# ====== MAIN ======
+if __name__ == '__main__':
+    root = tk.Tk()
+    app = DeepCheckerApp(root)
+    root.mainloop()
