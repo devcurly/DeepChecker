@@ -307,6 +307,11 @@ input_label = ttk.Label(label_container,
                         style="Stellar.TLabel")
 input_label.pack(anchor="w")
 
+instruction_label = ttk.Label(input_inner,
+                              text="🔹 Please enter your Discord ID before scanning.",
+                              style="Cosmic.TLabel")
+instruction_label.pack(anchor="w", pady=(0, 16))
+
 # Premium input field
 discord_id_entry = ttk.Entry(input_inner, width=40, style="Void.TEntry")
 discord_id_entry.pack(fill=tk.X, pady=(0, 8))
