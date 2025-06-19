@@ -156,6 +156,35 @@ def check_for_update():
     except Exception as e:
         print("Update check failed:", e)
 
+import sys
+import threading
+
+def run_uninstaller():
+    confirm = messagebox.askyesno("Uninstall", "Are you sure you want to uninstall DeepChecker?\nThis will close the app and remove all files.")
+    if not confirm:
+        return
+
+    bat = f"""
+    @echo off
+    timeout /t 1 > nul
+    taskkill /f /pid {os.getpid()} > nul 2>&1
+    del /f \"{os.path.basename(sys.argv[0])}\"
+    del /f version.txt
+    del /f deepchecker.ico
+    del /f update_replace.bat
+    set SHORTCUT=\"%USERPROFILE%\\Desktop\\DeepChecker.lnk\"
+    if exist %SHORTCUT% del /f %SHORTCUT%
+    exit
+    """
+
+    with open("uninstall.bat", "w") as f:
+        f.write(bat)
+
+    threading.Thread(target=lambda: subprocess.Popen(["uninstall.bat"])).start()
+    app.destroy()
+
+
+
 
 def download_and_replace():
     new_file = "deepchecker_new.py"
@@ -326,6 +355,13 @@ start_button = ttk.Button(action_zone,
                           style="Quantum.TButton")
 start_button.pack()
 
+uninstall_button = ttk.Button(action_zone,
+                              text="🗑 Uninstall DeepChecker",
+                              command=run_uninstaller,
+                              style="Quantum.TButton")
+uninstall_button.pack(pady=(12, 0))
+
+
 # 💻 Ultra-Modern Terminal
 terminal_section = tk.Frame(main_container, bg=COSMIC_NAVY, bd=0, relief="flat")
 terminal_section.pack(fill=tk.BOTH, expand=True, padx=24, pady=(12, 24))
@@ -406,4 +442,30 @@ def create_pulse_effect():
 def setup_focus_system():
     pass
 
-app.mainloop()
+# Play intro video first
+def play_intro_video():
+    import cv2
+
+    cap = cv2.VideoCapture("intro.mov")
+    if not cap.isOpened():
+        print("❌ Failed to load intro.mov — skipping video.")
+        return
+
+    cv2.namedWindow("Launching DeepChecker...", cv2.WINDOW_NORMAL)
+    cv2.setWindowProperty("Launching DeepChecker...", cv2.WND_PROP_FULLSCREEN, cv2.WINDOW_FULLSCREEN)
+
+    while cap.isOpened():
+        ret, frame = cap.read()
+        if not ret:
+            break
+        cv2.imshow("Launching DeepChecker...", frame)
+        if cv2.waitKey(25) & 0xFF == ord('q'):
+            break
+
+    cap.release()
+    cv2.destroyAllWindows()
+
+# Run the intro and then launch GUI
+if __name__ == '__main__':
+    play_intro_video()
+    app.mainloop()
