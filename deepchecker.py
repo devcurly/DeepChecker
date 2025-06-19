@@ -10,6 +10,8 @@ import sys
 import time
 import subprocess
 import shutil
+import webbrowser
+from tkinter import messagebox
 
 # ========== Original DeepChecker Logic ==========
 CHECK_KEYWORDS = [
@@ -110,6 +112,11 @@ def run_scan():
         except Exception as e:
             result_text.insert(tk.END, f"\u274c Error: {e}")
         start_button.config(state=tk.NORMAL)
+        
+should_join = messagebox.askyesno("Need Help?", "Would you like to join our support Discord server?")
+if should_join:
+    webbrowser.open("https://discord.gg/F77q5GDNjB")
+
 
     threading.Thread(target=worker, daemon=True).start()
 
