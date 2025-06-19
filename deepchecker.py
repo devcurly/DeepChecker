@@ -121,16 +121,31 @@ def run_scan():
 
 
 # ========== Version & Auto-Update ==========
-VERSION = "BETA 1.1.1"
+def get_remote_version():
+    try:
+        response = requests.get(VERSION_URL, timeout=5)
+        return response.text.strip()
+    except:
+        return "Unknown"
+
 VERSION_URL = "https://raw.githubusercontent.com/devcurly/DeepChecker/main/version.txt"
 PY_URL = "https://raw.githubusercontent.com/devcurly/DeepChecker/main/deepchecker.py"
+
+def parse_version(v):
+    return [int(part) for part in v.strip().split(".")]
+
+def is_newer_version(local, remote):
+    try:
+        return parse_version(remote) > parse_version(local)
+    except:
+        return False
 
 def check_for_update():
     try:
         response = requests.get(VERSION_URL, timeout=5)
         latest_version = response.text.strip()
-        if latest_version != VERSION:
-            # temp root for messagebox
+        print(f"Local version: {get_remote_version()} | Remote version: {latest_version}")
+        if is_newer_version(get_remote_version(), latest_version):
             temp_root = tk.Tk()
             temp_root.withdraw()
             if messagebox.askyesno("Update Available", f"A new version ({latest_version}) is available. Update now?"):
@@ -140,6 +155,7 @@ def check_for_update():
             temp_root.destroy()
     except Exception as e:
         print("Update check failed:", e)
+
 
 def download_and_replace():
     new_file = "deepchecker_new.py"
@@ -167,7 +183,7 @@ check_for_update()
 
 # ========== Stunning GUI Setup ==========
 app = tk.Tk()
-app.title(f"Curly's DeepChecker {VERSION}")
+app.title(f"Curly's DeepChecker {get_remote_version()}")
 app.geometry("900x650")
 
 # Premium color palette
